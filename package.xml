@@ -1,0 +1,20 @@
+<package>
+  <name>rosserial_stm32f1</name>
+  <version>0.0.1</version>
+  <description>
+  rosserial_stm32f1 package provides the required hardware definitions for compiling rosserial_client targets for stm32f10x MCU projects using stm32_cmake and StdPeriph library
+  </description>
+  <maintainer email="vmatos@robosavvy.com">Vitor Matos</maintainer>
+  <license>BSD</license>
+  <url type="website">http://wiki.ros.org/rosserial_stm32f1</url>
+  <url type="repository">https://github.com/robosavvy/rosserial_stm32f1</url>
+  <author>Vitor Matos</author>
+  <author email="vmatos@robosavvy.com">Vitor Matos</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <run_depend>rosserial_msgs</run_depend>
+  <run_depend>rosserial_client</run_depend>
+</package>
+
+
