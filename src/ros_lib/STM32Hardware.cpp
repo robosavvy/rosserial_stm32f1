@@ -63,8 +63,8 @@ void USART2_IRQHandler()
   // RX and copy the data to buffer
   if (USART_GetITStatus(USART2, USART_IT_RXNE))
   {
-    //  We should verify if buffer is not full. Let's assume not, for faster interrupt routine.
-    RingBufferU8_writeByte(&rxBuffer, (uint8_t)USART_ReceiveData(USART2));
+    if (RingBufferU8_free(&rxBuffer) > 0)
+      RingBufferU8_writeByte(&rxBuffer, (uint8_t)USART_ReceiveData(USART2));
   }
 }
 }
