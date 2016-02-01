@@ -28,13 +28,12 @@ extern "C"
 {
   #include <stm32f10x.h>
   #include <stm32f10x_usart.h>
-  #include "ringbuffer.h"
+  #include "ringbuf.h"
 }
 
-
-RingBufferU8 rxBuffer;
-RingBufferU8 txBuffer;
 // UART buffer structures
+tRingBufObject rxBuffer;
+tRingBufObject txBuffer;
 uint8_t ui8rxBufferData[RX_BUFFER_SIZE];
 uint8_t ui8txBufferData[TX_BUFFER_SIZE];
 
@@ -56,15 +55,17 @@ void USART2_IRQHandler()
   if (USART_GetITStatus(USART2, USART_IT_TC))
   {
     USART_ClearITPendingBit(USART2, USART_IT_TC);
-    if (RingBufferU8_available(&txBuffer))
-      USART_SendData(USART2, (uint8_t)RingBufferU8_readByte(&txBuffer));
+    if (RingBufUsed(&txBuffer))
+      USART_SendData(USART2, (uint8_t)RingBufReadOne(&txBuffer));
   }
 
   // RX and copy the data to buffer
   if (USART_GetITStatus(USART2, USART_IT_RXNE))
   {
-    if (RingBufferU8_free(&rxBuffer) > 0)
-      RingBufferU8_writeByte(&rxBuffer, (uint8_t)USART_ReceiveData(USART2));
+    if (!RingBufFull(&rxBuffer))
+    {
+      RingBufWriteOne(&rxBuffer, (uint8_t)USART_ReceiveData(USART2));
+    }
   }
 }
 }

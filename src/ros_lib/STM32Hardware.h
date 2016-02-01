@@ -40,7 +40,7 @@ extern "C"
 {
   #include <stm32f10x.h>
   #include <stm32f10x_usart.h>
-  #include "ringbuffer.h"
+  #include "ringbuf.h"
 }
 
 #define SYSTICKHZ  1000UL
@@ -49,8 +49,8 @@ extern "C"
 #define ROSSERIAL_BAUDRATE 57600
 #endif
 
-extern RingBufferU8 rxBuffer;
-extern RingBufferU8 txBuffer;
+extern tRingBufObject rxBuffer;
+extern tRingBufObject txBuffer;
 extern uint8_t ui8rxBufferData[RX_BUFFER_SIZE];
 extern uint8_t ui8txBufferData[TX_BUFFER_SIZE];
 extern volatile uint32_t g_ui32milliseconds;
@@ -91,7 +91,7 @@ class STM32Hardware
       GPIO_Init(GPIOA, &GPIO_InitStructure);
       
       GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_3;
-      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
       GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
       GPIO_Init(GPIOA, &GPIO_InitStructure);
       
@@ -120,17 +120,15 @@ class STM32Hardware
       NVIC_Init(&NVIC_InitStructure); 
 
       // Initialize UART buffers.
-      RingBufferU8_init(&rxBuffer, ui8rxBufferData, RX_BUFFER_SIZE);
-      RingBufferU8_init(&txBuffer, ui8txBufferData, TX_BUFFER_SIZE);
-      RingBufferU8_clear(&txBuffer);
-      RingBufferU8_clear(&rxBuffer);
+      RingBufInit(&rxBuffer, ui8rxBufferData, RX_BUFFER_SIZE);
+      RingBufInit(&txBuffer, ui8txBufferData, TX_BUFFER_SIZE);
     }
 
     // read a byte from the serial port. -1 = failure
     int read()
     {
-      if (RingBufferU8_available(&rxBuffer))
-        return RingBufferU8_readByte(&rxBuffer);
+      if (RingBufUsed(&rxBuffer))
+        return RingBufReadOne(&rxBuffer);
       else
         return -1;
     }
@@ -138,12 +136,15 @@ class STM32Hardware
     // write data to the connection to ROS
     void write(uint8_t* data, int length)
     {
-      if(RingBufferU8_free(&txBuffer) >= length)
+      // Trigger sending buffer if not already sending
+      if(RingBufEmpty(&txBuffer))
       {
-        RingBufferU8_write(&txBuffer, data, length);
-        // Trigger sending buffer if not already sending
-        if (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == SET)
-          USART_SendData(USART2, (uint8_t)RingBufferU8_readByte(&txBuffer));
+        RingBufWrite(&txBuffer, data, length);
+        USART_SendData(USART2, (uint8_t)RingBufReadOne(&txBuffer));
+      }
+      else
+      {
+        RingBufWrite(&txBuffer, data, length);
       }
     }
 
